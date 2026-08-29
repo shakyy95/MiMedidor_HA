@@ -55,20 +55,33 @@ permiso especial.
 
 </details>
 
-## Entidad
+## Entidades
 
-- **`sensor.mi_medidor_consumo`** — consumo de energía activa (kWh) del
-  período de facturación actual
-  (`Facturacion.Periodos[-1].TotalActivaImportada / 1000`).
-  - `device_class`: `energy`
-  - `state_class`: `measurement` (se reinicia con cada período, no es un
-    total acumulado de por vida)
-  - Atributos extra: `suministro` (respuesta completa de `Suministros`) y
-    `periodo_actual` (el período de facturación en curso, tal cual lo
-    devuelve la API), útiles para automatizaciones o para armar sensores
-    derivados con [templates](https://www.home-assistant.io/docs/configuration/templating/).
-- Se actualiza cada 60 minutos (`DEFAULT_SCAN_INTERVAL_MINUTES` en
-  `const.py`); se puede editar ese valor si se necesita otra frecuencia.
+Todas las entidades se agrupan bajo un único dispositivo "Mi Medidor" (marca
+DISCAR, modelo/versión de firmware y número de serie tomados de
+`Terminales`). Se actualizan cada 60 minutos
+(`DEFAULT_SCAN_INTERVAL_MINUTES` en `const.py`).
+
+| Entidad | Fuente | Notas |
+|---|---|---|
+| Energía total | `Suministros.UltimoAcumulado.ActivaT0` | Lectura acumulada de por vida del medidor (kWh). `state_class: total_increasing` — la indicada para el **Panel de Energía** de HA. |
+| Consumo actual | `Suministros.ConsumoActual` | kWh del período en curso, en vivo. |
+| Consumo del período de facturación | `Facturacion.Periodos[-1].TotalActivaImportada` | kWh del período actual según facturación; expone `Descripcion`/`Inicio`/`Fin` como atributos. |
+| Consumo estimado del mes | `Suministros.ConsumoEstimadoMes` | kWh. |
+| Consumo mes anterior | `Suministros.ConsumoMesAnterior` | kWh. |
+| Demanda actual | `Suministros.DemandaActual` | Potencia (W). |
+| Demanda máxima registrada *(diagnóstico)* | `Terminales.UltimoPeriodico.DemandaMaxW` | Potencia (W). |
+| Tensión / Corriente *(por fase)* | `Terminales.UltimoPeriodico` | Un sensor de tensión y uno de corriente por fase: `TensionM`/`CorrienteM` en medidores monofásicos, o `TensionL1..L3`/`CorrienteL1..L3` en trifásicos (se detecta solo con `DatosTerminal.EsTrifasico`). |
+| Factor de potencia *(diagnóstico)* | `Terminales.UltimoPeriodico.FactorPotencia` | Adimensional. |
+| Frecuencia *(diagnóstico)* | `Terminales.UltimoPeriodico.Frecuencia` | Hz. |
+| Estado del suministro *(diagnóstico)* | `Suministros.Estado` | Texto (p.ej. "Activo"). |
+| Estado del relé *(diagnóstico)* | `Terminales.UltimoPeriodico.EstadoRele` | Texto ("Cerrado"/"Abierto"). |
+| Estado del terminal *(diagnóstico)* | `Terminales.DatosTerminal.Estado` | Texto (p.ej. "O.K."). |
+
+"Consumo del período de facturación" y "Energía total" difieren a
+propósito: el primero se reinicia con cada período (`measurement`), el
+segundo es la lectura de por vida del medidor y solo crece
+(`total_increasing`) — es el que hay que usar para el Panel de Energía.
 
 ## Solución de problemas
 
@@ -96,8 +109,9 @@ real:
 | Paso | Endpoint | Qué devuelve |
 |---|---|---|
 | Login | `GET Usuarios?usuario=...&password=...&versionApp=2` | `token` de acceso |
-| Suministro | `GET Suministros?token=...` | Número de serie del medidor, titular, dirección, estado, `ConsumoActual` en tiempo real |
-| Consumo | `GET Facturacion?token=...&periodos=1` | `Periodos[-1].TotalActivaImportada` (Wh) del período de facturación actual |
+| Suministro | `GET Suministros?token=...` | Número de serie del medidor, titular, dirección, estado, consumo/demanda en tiempo real, `UltimoAcumulado.ActivaT0` (lectura de por vida) |
+| Facturación | `GET Facturacion?token=...&periodos=1` | `Periodos[-1].TotalActivaImportada` (Wh) del período de facturación actual |
+| Terminal | `GET Terminales/{numeroSerie[4:12]}?token=...` | Tensión/corriente por fase, factor de potencia, frecuencia, estado del relé y del terminal |
 
 `TotalActivaImportada` es la diferencia entre la última y la primera lectura
 del período (`UltimaLectura.ActivaT0 - PrimeraLectura.ActivaT0`), no un

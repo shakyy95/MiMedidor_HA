@@ -11,13 +11,13 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import MiMedidorApiClient, MiMedidorAuthError, MiMedidorError, MiMedidorReading
+from .api import MiMedidorApiClient, MiMedidorAuthError, MiMedidorData, MiMedidorError
 from .const import DEFAULT_SCAN_INTERVAL_MINUTES, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class MiMedidorCoordinator(DataUpdateCoordinator[MiMedidorReading]):
+class MiMedidorCoordinator(DataUpdateCoordinator[MiMedidorData]):
     """Coordinates polling of mimedidor.mrdims.com."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -33,9 +33,9 @@ class MiMedidorCoordinator(DataUpdateCoordinator[MiMedidorReading]):
             session, entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
         )
 
-    async def _async_update_data(self) -> MiMedidorReading:
+    async def _async_update_data(self) -> MiMedidorData:
         try:
-            return await self.client.async_get_consumption()
+            return await self.client.async_get_data()
         except MiMedidorAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except MiMedidorError as err:

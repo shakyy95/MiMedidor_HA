@@ -6,18 +6,22 @@ The endpoints, parameter names and response field names below were pulled
 directly out of the production JS bundle
 (main-es2015.b8c87b7b683cb96a1e82.js, service class around `urlAPI =
 "https://api.mrdims.com/V2/api/"`), specifically the methods
-`obtenerUsuarioLogin`, `obtenerDatosSuministro` and `obtenerFacturacion`.
+`obtenerUsuarioLogin`, `obtenerDatosSuministro`, `obtenerDatosTerminal` and
+`obtenerFacturacion`, and confirmed against a live logged-in account:
 
-Both the unauthenticated error path (HTTP 401 with a bare JSON string body
-like `"Usuario y/o Contraseña incorrectos"`) and the authenticated response
-shapes (`Usuarios` returning `{"token": ..., "urlLogo": ..., ...}`,
-`Suministros` returning `{"NumeroDeSerieMedidor": ..., "ConsumoActual": ...,
-...}`, `Facturacion?periodos=1` returning `{"Periodos": [{...,
-"TotalActivaImportada": ...}]}`) were confirmed against a live logged-in
-account. `TotalActivaImportada` is a per-period delta (verified equal to
-`UltimaLectura.ActivaT0 - PrimeraLectura.ActivaT0` for the current period),
-not a lifetime cumulative reading, which is why the sensor uses
-`SensorStateClass.MEASUREMENT` rather than `TOTAL_INCREASING`.
+- `Usuarios` returns `{"token": ..., "urlLogo": ..., ...}`.
+- `Suministros` returns meter/supply identification plus real-time figures
+  (`ConsumoActual`, `DemandaActual`, `UltimoAcumulado.ActivaT0`, ...).
+- `Terminales/{numeroSerie[4:12]}` returns the terminal's last periodic
+  reading (`UltimoPeriodico`: voltage/current/power factor/frequency/relay
+  state) and its own copy of `UltimoAcumulado`.
+- `Facturacion?periodos=1` returns `{"Periodos": [{...,
+  "TotalActivaImportada": ...}]}` for the current billing period;
+  `TotalActivaImportada` is a per-period delta (verified equal to
+  `UltimoLectura.ActivaT0 - PrimeraLectura.ActivaT0`), not a lifetime
+  cumulative reading. `UltimoAcumulado.ActivaT0`, by contrast, *is* the
+  lifetime cumulative active-energy reading (grows monotonically), which is
+  why it's the one used for the `TOTAL_INCREASING` energy sensor.
 """
 from __future__ import annotations
 
@@ -42,16 +46,16 @@ class MiMedidorAuthError(MiMedidorError):
 
 
 class MiMedidorDataError(MiMedidorError):
-    """Suministro/consumption data could not be fetched or parsed."""
+    """Suministro/terminal/consumption data could not be fetched or parsed."""
 
 
 @dataclass
-class MiMedidorReading:
-    """Latest consumption reading, plus supporting data from the API."""
+class MiMedidorData:
+    """Raw data pulled from the three read endpoints, bundled together."""
 
-    value: float | None
-    unit: str | None
-    raw: dict[str, Any] = field(default_factory=dict)
+    suministro: dict[str, Any] = field(default_factory=dict)
+    facturacion: dict[str, Any] = field(default_factory=dict)
+    terminal: dict[str, Any] = field(default_factory=dict)
 
 
 class MiMedidorApiClient:
@@ -113,35 +117,29 @@ class MiMedidorApiClient:
         raise MiMedidorAuthError("La sesión expiró y no se pudo renovar el token.")
 
     async def async_get_suministro(self) -> dict[str, Any]:
-        """Fetch the account's supply/meter identification data."""
+        """Fetch the account's supply/meter identification and live figures."""
         return await self._authed_get("Suministros")
 
     async def async_get_facturacion(self, periodos: int = 1) -> dict[str, Any]:
         """Fetch billing-period data, including the current period's totals."""
         return await self._authed_get("Facturacion", periodos=periodos)
 
-    async def async_get_consumption(self) -> MiMedidorReading:
-        """Fetch the current billing period's active-energy consumption."""
+    async def async_get_terminal(self, numero_serie: str) -> dict[str, Any]:
+        """Fetch the terminal's last periodic reading (voltage, current, etc.)."""
+        return await self._authed_get("Terminales/" + numero_serie[4:12])
+
+    async def async_get_data(self) -> MiMedidorData:
+        """Fetch and bundle everything the sensors need in one call."""
         suministro = await self.async_get_suministro()
+
+        numero_serie = suministro.get("NumeroDeSerieMedidor") if isinstance(suministro, dict) else None
+        if not numero_serie:
+            raise MiMedidorDataError(
+                "La respuesta de Suministros no incluyó 'NumeroDeSerieMedidor'; "
+                "el formato de la API pudo haber cambiado."
+            )
+
         facturacion = await self.async_get_facturacion(periodos=1)
+        terminal = await self.async_get_terminal(numero_serie)
 
-        periodos = facturacion.get("Periodos") if isinstance(facturacion, dict) else None
-        if not periodos:
-            raise MiMedidorDataError(
-                "La respuesta de Facturacion no incluyó 'Periodos'; "
-                "el formato de la API pudo haber cambiado."
-            )
-
-        periodo_actual = periodos[-1]
-        total_wh = periodo_actual.get("TotalActivaImportada")
-        if total_wh is None:
-            raise MiMedidorDataError(
-                "El período actual no incluyó 'TotalActivaImportada'; "
-                "el formato de la API pudo haber cambiado."
-            )
-
-        return MiMedidorReading(
-            value=float(total_wh) / 1000,
-            unit="kWh",
-            raw={"suministro": suministro, "periodo_actual": periodo_actual},
-        )
+        return MiMedidorData(suministro=suministro, facturacion=facturacion, terminal=terminal)
