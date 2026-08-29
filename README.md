@@ -64,7 +64,8 @@ DISCAR, modelo/versión de firmware y número de serie tomados de
 
 | Entidad | Fuente | Notas |
 |---|---|---|
-| Energía total | `Suministros.UltimoAcumulado.ActivaT0` | Lectura acumulada de por vida del medidor (kWh). `state_class: total_increasing` — la indicada para el **Panel de Energía** de HA. |
+| Energía total | `Suministros.UltimoAcumulado.ActivaT0` | Lectura acumulada de por vida del medidor (kWh). `state_class: total_increasing` — úsala como **consumo de red** en el Panel de Energía de HA. |
+| Energía total exportada | `Suministros.UltimoAcumulado.ActivaT0e` | Igual que la anterior pero de energía inyectada a la red (kWh). Solo distinto de cero en suministros bidireccionales (con generación/paneles solares) — úsala como **devolución a la red**. |
 | Consumo actual | `Suministros.ConsumoActual` | kWh del período en curso, en vivo. |
 | Consumo del período de facturación | `Facturacion.Periodos[-1].TotalActivaImportada` | kWh del período actual según facturación; expone `Descripcion`/`Inicio`/`Fin` como atributos. |
 | Consumo estimado del mes | `Suministros.ConsumoEstimadoMes` | kWh. |
@@ -82,6 +83,23 @@ DISCAR, modelo/versión de firmware y número de serie tomados de
 propósito: el primero se reinicia con cada período (`measurement`), el
 segundo es la lectura de por vida del medidor y solo crece
 (`total_increasing`) — es el que hay que usar para el Panel de Energía.
+
+## Panel de Energía
+
+"Energía total" y "Energía total exportada" ya cumplen lo que pide el
+[Panel de Energía](https://www.home-assistant.io/docs/energy/) de Home
+Assistant (`device_class: energy` + `state_class: total_increasing` + kWh),
+así que aparecen solas en el selector de sensores:
+
+1. Configuración → **Paneles de energía**.
+2. En **Red eléctrica** → *Añadir consumo* → elegir `sensor.mi_medidor_energia_total`.
+3. Si el suministro es bidireccional (con generación propia), en *Devolución
+   a la red* elegir `sensor.mi_medidor_energia_total_exportada` (para un
+   suministro unidireccional queda siempre en 0, no hace falta agregarla).
+4. Guardar. HA empieza a generar estadísticas horarias/diarias a partir de
+   ahí — las tarjetas de energía (resumen diario, gráfico de barras,
+   comparativa, etc.) se arman solas una vez que el sensor está cargado en
+   el panel, sin configuración adicional.
 
 ## Solución de problemas
 

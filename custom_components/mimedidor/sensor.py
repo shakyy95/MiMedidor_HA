@@ -63,6 +63,15 @@ SENSOR_DESCRIPTIONS: tuple[MiMedidorSensorEntityDescription, ...] = (
         value_fn=lambda d: _wh_to_kwh(_get(d.suministro, "UltimoAcumulado", "ActivaT0")),
     ),
     MiMedidorSensorEntityDescription(
+        key="energia_total_exportada",
+        name="Energía total exportada",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        value_fn=lambda d: _wh_to_kwh(_get(d.suministro, "UltimoAcumulado", "ActivaT0e")),
+    ),
+    MiMedidorSensorEntityDescription(
         key="consumo_actual",
         name="Consumo actual",
         device_class=SensorDeviceClass.ENERGY,
