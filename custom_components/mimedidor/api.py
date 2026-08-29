@@ -22,12 +22,22 @@ directly out of the production JS bundle
   cumulative reading. `UltimoAcumulado.ActivaT0`, by contrast, *is* the
   lifetime cumulative active-energy reading (grows monotonically), which is
   why it's the one used for the `TOTAL_INCREASING` energy sensor.
+- `Consumos?desde=...&hasta=...&agrupadoPor=2&incluirNulos=true` returns a
+  list of one entry per day (`FechaHora`, `Activa`/`Reactiva`/`Aparente` in
+  Wh/VARh/VAh, `CosPhi`) — this is what the portal's own "Energía" daily bar
+  chart is built from; verified the returned `Activa` values against that
+  chart. The CO2-estimate figure shown in the portal isn't an API field: the
+  Angular bundle computes it client-side as
+  `kg_CO2 = (Suministros.ConsumoEstimadoMes / 1000) * 0.43` (Argentina grid
+  emission factor) and a "car-equivalent" as `kg_CO2 / 262`; both are
+  reproduced the same way here rather than looked up.
 """
 from __future__ import annotations
 
 import json
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from typing import Any
 
 import aiohttp
@@ -56,6 +66,7 @@ class MiMedidorData:
     suministro: dict[str, Any] = field(default_factory=dict)
     facturacion: dict[str, Any] = field(default_factory=dict)
     terminal: dict[str, Any] = field(default_factory=dict)
+    consumo_diario: list[dict[str, Any]] = field(default_factory=list)
 
 
 class MiMedidorApiClient:
@@ -128,6 +139,19 @@ class MiMedidorApiClient:
         """Fetch the terminal's last periodic reading (voltage, current, etc.)."""
         return await self._authed_get("Terminales/" + numero_serie[4:12])
 
+    async def async_get_consumo_diario(self) -> list[dict[str, Any]]:
+        """Fetch the last few days of daily energy totals (agrupadoPor=2)."""
+        hasta = datetime.now()
+        desde = hasta - timedelta(days=3)
+        result = await self._authed_get(
+            "Consumos",
+            desde=desde.strftime("%Y-%m-%dT00:00:00"),
+            hasta=hasta.strftime("%Y-%m-%dT23:59:59"),
+            agrupadoPor=2,
+            incluirNulos="true",
+        )
+        return result if isinstance(result, list) else []
+
     async def async_get_data(self) -> MiMedidorData:
         """Fetch and bundle everything the sensors need in one call."""
         suministro = await self.async_get_suministro()
@@ -141,5 +165,11 @@ class MiMedidorApiClient:
 
         facturacion = await self.async_get_facturacion(periodos=1)
         terminal = await self.async_get_terminal(numero_serie)
+        consumo_diario = await self.async_get_consumo_diario()
 
-        return MiMedidorData(suministro=suministro, facturacion=facturacion, terminal=terminal)
+        return MiMedidorData(
+            suministro=suministro,
+            facturacion=facturacion,
+            terminal=terminal,
+            consumo_diario=consumo_diario,
+        )

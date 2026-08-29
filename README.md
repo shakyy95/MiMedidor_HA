@@ -77,11 +77,15 @@ DISCAR, modelo/versión de firmware y número de serie tomados de
 | Consumo del período de facturación | `Facturacion.Periodos[-1].TotalActivaImportada` | kWh del período actual según facturación; expone `Descripcion`/`Inicio`/`Fin` como atributos. |
 | Consumo estimado del mes | `Suministros.ConsumoEstimadoMes` | kWh. |
 | Consumo mes anterior | `Suministros.ConsumoMesAnterior` | kWh. |
+| Energía de hoy / de ayer | `Consumos?agrupadoPor=2` | kWh por día (el mismo desglose que el gráfico "Energía" del portal); exponen `reactiva_kvarh`/`aparente_kvah`/`coseno_phi` de ese día como atributos. |
 | Demanda actual | `Suministros.DemandaActual` | Potencia (W). |
 | Demanda máxima registrada *(diagnóstico)* | `Terminales.UltimoPeriodico.DemandaMaxW` | Potencia (W). |
 | Tensión / Corriente *(por fase)* | `Terminales.UltimoPeriodico` | Un sensor de tensión y uno de corriente por fase: `TensionM`/`CorrienteM` en medidores monofásicos, o `TensionL1..L3`/`CorrienteL1..L3` en trifásicos (se detecta solo con `DatosTerminal.EsTrifasico`). |
-| Factor de potencia *(diagnóstico)* | `Terminales.UltimoPeriodico.FactorPotencia` | Adimensional. |
+| Coseno φ (facturación) *(diagnóstico)* | `Terminales.UltimoPeriodico.CosPhi` | Agregado del terminal — el "COS φ FACT." del portal. |
+| Factor de potencia / Coseno φ medido / THD tensión / THD corriente *(por fase, diagnóstico)* | `Terminales.UltimoPeriodico` | Iguales a las tarjetas "F.POTENCIA"/"COS φ MED."/"THDv"/"THDi" del portal. Siempre viven en los campos `...L1`/`...L2`/`...L3` — incluso en medidores monofásicos, que igual usan el canal L1 para estas métricas (a diferencia de tensión/corriente, que ahí usan `...M`). |
 | Frecuencia *(diagnóstico)* | `Terminales.UltimoPeriodico.Frecuencia` | Hz. |
+| CO2 estimado del mes | Calculado: `Suministros.ConsumoEstimadoMes (kWh) × 0.43` | Reproduce el cálculo que hace el propio portal en el cliente (no es un campo de la API); expone `autos_equivalentes` (÷262) como atributo, igual que el portal. |
+| Reducción estimada de consumo | Calculado: `(ConsumoMesAnterior − ConsumoEstimadoMes) / ConsumoMesAnterior` | Porcentaje; también reproduce una cuenta que hace el portal, no un campo de la API. |
 | Estado del suministro *(diagnóstico)* | `Suministros.Estado` | Texto (p.ej. "Activo"). |
 | Estado del relé *(diagnóstico)* | `Terminales.UltimoPeriodico.EstadoRele` | Texto ("Cerrado"/"Abierto"). |
 | Estado del terminal *(diagnóstico)* | `Terminales.DatosTerminal.Estado` | Texto (p.ej. "O.K."). |
@@ -136,7 +140,8 @@ real:
 | Login | `GET Usuarios?usuario=...&password=...&versionApp=2` | `token` de acceso |
 | Suministro | `GET Suministros?token=...` | Número de serie del medidor, titular, dirección, estado, consumo/demanda en tiempo real, `UltimoAcumulado.ActivaT0` (lectura de por vida) |
 | Facturación | `GET Facturacion?token=...&periodos=1` | `Periodos[-1].TotalActivaImportada` (Wh) del período de facturación actual |
-| Terminal | `GET Terminales/{numeroSerie[4:12]}?token=...` | Tensión/corriente por fase, factor de potencia, frecuencia, estado del relé y del terminal |
+| Terminal | `GET Terminales/{numeroSerie[4:12]}?token=...` | Tensión/corriente por fase, factor de potencia, frecuencia, THD, estado del relé y del terminal |
+| Consumo diario | `GET Consumos?token=...&desde=...&hasta=...&agrupadoPor=2&incluirNulos=true` | Un registro por día (activa/reactiva/aparente/cos φ) — el gráfico "Energía" del portal |
 
 `TotalActivaImportada` es la diferencia entre la última y la primera lectura
 del período (`UltimaLectura.ActivaT0 - PrimeraLectura.ActivaT0`), no un

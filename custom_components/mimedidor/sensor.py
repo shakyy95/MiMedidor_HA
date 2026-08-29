@@ -133,12 +133,12 @@ SENSOR_DESCRIPTIONS: tuple[MiMedidorSensorEntityDescription, ...] = (
     ),
     # -- Power quality ----------------------------------------------------
     MiMedidorSensorEntityDescription(
-        key="factor_potencia",
-        name="Factor de potencia",
+        key="coseno_phi_facturacion",
+        name="Coseno φ (facturación)",
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda d: _get(d.terminal, "UltimoPeriodico", "FactorPotencia"),
+        value_fn=lambda d: _get(d.terminal, "UltimoPeriodico", "CosPhi"),
     ),
     MiMedidorSensorEntityDescription(
         key="frecuencia",
@@ -148,6 +148,79 @@ SENSOR_DESCRIPTIONS: tuple[MiMedidorSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfFrequency.HERTZ,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d: _get(d.terminal, "UltimoPeriodico", "Frecuencia"),
+    ),
+    # -- Environmental impact (reproduces the portal's own client-side formula) --
+    MiMedidorSensorEntityDescription(
+        key="co2_estimado_mes",
+        name="CO2 estimado del mes",
+        native_unit_of_measurement="kg",
+        suggested_display_precision=2,
+        value_fn=lambda d: round(
+            (_get(d.suministro, "ConsumoEstimadoMes") or 0) / 1000 * 0.43, 2
+        ),
+        attrs_fn=lambda d: {
+            "autos_equivalentes": round(
+                (_get(d.suministro, "ConsumoEstimadoMes") or 0) / 1000 * 0.43 / 262, 2
+            )
+        },
+    ),
+    MiMedidorSensorEntityDescription(
+        key="reduccion_estimada_consumo",
+        name="Reducción estimada de consumo",
+        native_unit_of_measurement="%",
+        suggested_display_precision=1,
+        value_fn=lambda d: (
+            round(
+                (
+                    (_get(d.suministro, "ConsumoMesAnterior") or 0)
+                    - (_get(d.suministro, "ConsumoEstimadoMes") or 0)
+                )
+                / _get(d.suministro, "ConsumoMesAnterior")
+                * 100,
+                1,
+            )
+            if _get(d.suministro, "ConsumoMesAnterior")
+            else None
+        ),
+    ),
+    # -- Daily energy (portal's "Energía" daily bar chart) -----------------
+    MiMedidorSensorEntityDescription(
+        key="energia_hoy",
+        name="Energía de hoy",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        value_fn=lambda d: _wh_to_kwh((d.consumo_diario or [{}])[-1].get("Activa")),
+        attrs_fn=lambda d: {
+            k: (d.consumo_diario or [{}])[-1].get(v)
+            for k, v in (
+                ("fecha", "FechaHora"),
+                ("reactiva_kvarh", "Reactiva"),
+                ("aparente_kvah", "Aparente"),
+                ("coseno_phi", "CosPhi"),
+            )
+        },
+    ),
+    MiMedidorSensorEntityDescription(
+        key="energia_ayer",
+        name="Energía de ayer",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        value_fn=lambda d: _wh_to_kwh(
+            (d.consumo_diario[-2] if len(d.consumo_diario) >= 2 else {}).get("Activa")
+        ),
+        attrs_fn=lambda d: {
+            k: (d.consumo_diario[-2] if len(d.consumo_diario) >= 2 else {}).get(v)
+            for k, v in (
+                ("fecha", "FechaHora"),
+                ("reactiva_kvarh", "Reactiva"),
+                ("aparente_kvah", "Aparente"),
+                ("coseno_phi", "CosPhi"),
+            )
+        },
     ),
     # -- Status -------------------------------------------------------
     MiMedidorSensorEntityDescription(
@@ -197,6 +270,57 @@ def _phase_sensor_descriptions(data: MiMedidorData) -> list[MiMedidorSensorEntit
                 state_class=SensorStateClass.MEASUREMENT,
                 native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
                 value_fn=lambda d, f=fase: _get(d.terminal, "UltimoPeriodico", f"Corriente{f}"),
+            )
+        )
+
+    # Power-quality figures (factor de potencia, coseno φ medido, THD) are only
+    # ever populated on the L1..L3 channel keys, even on monofásico terminals
+    # (where voltage/current instead live under "M") — confirmed against a
+    # live monofásico account, where CosPhiL1/FactorPotenciaL1/THDVL1/THDIL1
+    # were populated while the L2/L3 equivalents stayed at 0.
+    fases_calidad = ("L1", "L2", "L3") if es_trifasico else ("L1",)
+    for fase in fases_calidad:
+        suffix = "" if not es_trifasico else f" {fase}"
+        descriptions.append(
+            MiMedidorSensorEntityDescription(
+                key=f"factor_potencia_{fase.lower()}",
+                name=f"Factor de potencia{suffix}",
+                device_class=SensorDeviceClass.POWER_FACTOR,
+                state_class=SensorStateClass.MEASUREMENT,
+                entity_category=EntityCategory.DIAGNOSTIC,
+                value_fn=lambda d, f=fase: _get(
+                    d.terminal, "UltimoPeriodico", f"FactorPotencia{f}"
+                ),
+            )
+        )
+        descriptions.append(
+            MiMedidorSensorEntityDescription(
+                key=f"coseno_phi_medido_{fase.lower()}",
+                name=f"Coseno φ medido{suffix}",
+                device_class=SensorDeviceClass.POWER_FACTOR,
+                state_class=SensorStateClass.MEASUREMENT,
+                entity_category=EntityCategory.DIAGNOSTIC,
+                value_fn=lambda d, f=fase: _get(d.terminal, "UltimoPeriodico", f"CosPhi{f}"),
+            )
+        )
+        descriptions.append(
+            MiMedidorSensorEntityDescription(
+                key=f"thd_tension_{fase.lower()}",
+                name=f"THD tensión{suffix}",
+                native_unit_of_measurement="%",
+                state_class=SensorStateClass.MEASUREMENT,
+                entity_category=EntityCategory.DIAGNOSTIC,
+                value_fn=lambda d, f=fase: _get(d.terminal, "UltimoPeriodico", f"THDV{f}"),
+            )
+        )
+        descriptions.append(
+            MiMedidorSensorEntityDescription(
+                key=f"thd_corriente_{fase.lower()}",
+                name=f"THD corriente{suffix}",
+                native_unit_of_measurement="%",
+                state_class=SensorStateClass.MEASUREMENT,
+                entity_category=EntityCategory.DIAGNOSTIC,
+                value_fn=lambda d, f=fase: _get(d.terminal, "UltimoPeriodico", f"THDI{f}"),
             )
         )
     return descriptions
