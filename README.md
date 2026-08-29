@@ -7,45 +7,39 @@ argentinas con medidores inteligentes DiMET).
 
 ## Estado actual
 
-⚠️ **Este es un primer borrador funcional en estructura, pero no validado
-contra el sitio real.**
+✅ **Validado end-to-end contra una cuenta real** (login, `Suministros` y
+`Facturacion`).
 
-El sitio no tiene API pública/documentada, y el entorno donde se generó esta
-integración tiene bloqueado el acceso de red a `mimedidor.mrdims.com`, así
-que no fue posible probar el login ni el formato real de los datos de
-consumo contra el sitio en vivo.
+`mimedidor.mrdims.com` es una SPA de Angular sin API pública/documentada;
+no autentica contra un `<form>` HTML sino contra una API JSON separada en
+`https://api.mrdims.com/V2/api/`. Los endpoints y nombres de campos que usa
+`custom_components/mimedidor/api.py` se extrajeron del bundle de producción
+(`main-es2015.*.js`) y se confirmaron contra el sitio en vivo con una cuenta
+real: el login devuelve `token` como se esperaba, y `Facturacion` trae
+`TotalActivaImportada`, que coincide exactamente con la diferencia entre la
+primera y la última lectura del período (`UltimaLectura.ActivaT0 -
+PrimeraLectura.ActivaT0`) — es decir, es el consumo del período actual, no
+un acumulado de por vida.
 
-Lo que sí está resuelto:
+Lo que está resuelto:
 
 - Estructura estándar de integración de Home Assistant (config flow,
   coordinator, sensor) instalable vía HACS (repositorio custom) o
   copiando la carpeta a `custom_components/`.
-- **Login**: `custom_components/mimedidor/api.py` busca dinámicamente el
-  `<form>` de login (el que tiene un `<input type="password">`) y completa
-  usuario/contraseña según el tipo de cada campo, en vez de asumir nombres
-  de campos fijos. Esto debería funcionar mientras el login sea un form
-  HTML tradicional.
-- **Consumo**: intenta parsear JSON directo o un blob de estado embebido en
-  el HTML (`__INITIAL_STATE__`, `__NUXT__`, `__NEXT_DATA__`) buscando claves
-  como `consumo`, `lectura`, `kwh`, etc.
+- **Login**: `GET https://api.mrdims.com/V2/api/Usuarios?usuario=...&password=...&versionApp=2`.
+- **Suministro**: `GET .../Suministros?token=...` (número de serie del
+  medidor, titular, dirección, estado, `ConsumoActual` en tiempo real).
+- **Consumo**: `GET .../Facturacion?token=...&periodos=1`, usando
+  `Periodos[-1].TotalActivaImportada` (Wh, convertido a kWh) como el
+  consumo del período de facturación actual. Por eso el sensor usa
+  `state_class: measurement` y no `total_increasing`: el valor se reinicia
+  con cada período de facturación.
 
-## Qué falta para que funcione con datos reales
+## Pendiente
 
-Si al instalarla el login falla o el sensor queda en `unknown`/con error en
-el log, lo más probable es que el sitio no encaje con los supuestos de
-arriba (por ejemplo, si el login es una llamada a una API en vez de un
-`<form>`, o si el consumo se sirve desde un endpoint JSON con otro nombre de
-campos).
-
-Para terminar de ajustarlo hace falta una captura real del tráfico:
-
-1. Iniciar sesión en <https://mimedidor.mrdims.com/> desde una compu, con
-   las DevTools del navegador abiertas (pestaña **Network**).
-2. Navegar hasta la pantalla que muestra el consumo.
-3. Clic derecho en la lista de requests → **Save all as HAR**.
-4. Compartir ese archivo (se pueden tachar contraseñas/tokens, pero no las
-   URLs ni la estructura de las respuestas JSON) para ajustar
-   `custom_components/mimedidor/api.py` con los endpoints/campos reales.
+Falta instalar la integración en una instancia real de Home Assistant y
+confirmar que el config flow y el sensor se comportan bien en la UI (los
+endpoints y el parseo de datos ya están probados vía API directa).
 
 ## Instalación
 
@@ -58,6 +52,8 @@ Para terminar de ajustarlo hace falta una captura real del tráfico:
 
 ## Entidades
 
-- `sensor.mi_medidor_consumo`: último valor de consumo detectado. La unidad
-  y si es un valor acumulado o por período todavía no están confirmados
-  contra el sitio real.
+- `sensor.mi_medidor_consumo`: consumo de energía activa (kWh) del período de
+  facturación actual (`Facturacion.Periodos[-1].TotalActivaImportada / 1000`).
+  Se reinicia con cada período, por eso el `state_class` es `measurement` y
+  no `total_increasing`. Expone `suministro` y `periodo_actual` (la
+  respuesta cruda de la API) como atributos extra.

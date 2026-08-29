@@ -1,7 +1,11 @@
 """Sensor platform for the Mi Medidor integration."""
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -20,15 +24,18 @@ async def async_setup_entry(
 
 
 class MiMedidorConsumptionSensor(CoordinatorEntity[MiMedidorCoordinator], SensorEntity):
-    """Latest consumption reading from Mi Medidor.
+    """Current billing period's active-energy consumption (kWh).
 
-    Device class / TOTAL_INCREASING state class are intentionally not set:
-    it's not yet known whether the portal exposes a cumulative meter reading
-    or a per-period consumption value that resets. Set those once confirmed.
+    State class is MEASUREMENT rather than TOTAL/TOTAL_INCREASING: the value
+    is the current period's running total (Facturacion -> Periodos[-1] ->
+    TotalActivaImportada), which resets at the start of each billing period
+    rather than growing forever, and the exact reset timing hasn't been
+    confirmed against a live account.
     """
 
     _attr_has_entity_name = True
     _attr_name = "Consumo"
+    _attr_device_class = SensorDeviceClass.ENERGY
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator: MiMedidorCoordinator, entry: ConfigEntry) -> None:

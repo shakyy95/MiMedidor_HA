@@ -6,6 +6,6 @@
   "documentation": "https://github.com/shakyy95/mimedidor_ha",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/shakyy95/mimedidor_ha/issues",
-  "requirements": ["beautifulsoup4"],
-  "version": "0.1.0"
+  "requirements": [],
+  "version": "0.2.0"
 }
