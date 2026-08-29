@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mi Medidor",
+        "data": {
+          "username": "Usuario",
+          "password": "Contraseña"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Usuario o contraseña incorrectos",
+      "cannot_connect": "No se pudo conectar con mimedidor.mrdims.com"
+    },
+    "abort": {
+      "already_configured": "Esta cuenta ya está configurada"
+    }
+  }
+}

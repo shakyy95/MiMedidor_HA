@@ -1,0 +1,11 @@
+{
+  "domain": "mimedidor",
+  "name": "Mi Medidor (DISCAR / Mr.DiMS)",
+  "codeowners": ["@shakyy95"],
+  "config_flow": true,
+  "documentation": "https://github.com/shakyy95/mimedidor_ha",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/shakyy95/mimedidor_ha/issues",
+  "requirements": ["beautifulsoup4"],
+  "version": "0.1.0"
+}
