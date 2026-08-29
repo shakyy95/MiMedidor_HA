@@ -40,24 +40,17 @@ revisar `custom_components/mimedidor/api.py` si eso pasa.
 
 ## Instalación vía HACS
 
-Como es un repositorio **privado** de GitHub, HACS necesita permiso
-explícito para leerlo; con el token que usa por defecto (solo repos
-públicos) no alcanza.
+El repositorio es público, así que no hace falta darle a HACS ningún
+permiso especial.
 
-1. **Dar acceso de HACS a repos privados.** En Home Assistant, andá a
-   **Configuración → Dispositivos y servicios → HACS → ⋮ → Reconfigurar**
-   (o desinstalá y reinstalá HACS si esa opción no aparece) y, durante el
-   paso de autorización con GitHub, marcá la opción para usar HACS con tus
-   repositorios privados. Esto le pide a GitHub un token con scope `repo`
-   en vez de solo `public_repo`.
-2. **Agregar este repo como repositorio custom.** HACS → ⋮ (arriba a la
+1. **Agregar este repo como repositorio custom.** HACS → ⋮ (arriba a la
    derecha) → **Repositorios personalizados** → pegar
    `https://github.com/shakyy95/MiMedidor_HA` → categoría **Integración** →
    Agregar.
-3. **Instalar.** Buscá "Mi Medidor" dentro de HACS → Integraciones,
+2. **Instalar.** Buscá "Mi Medidor" dentro de HACS → Integraciones,
    abrilo y tocá **Descargar**.
-4. **Reiniciar Home Assistant.**
-5. **Configurar la integración.** Configuración → Dispositivos y servicios
+3. **Reiniciar Home Assistant.**
+4. **Configurar la integración.** Configuración → Dispositivos y servicios
    → Añadir integración → buscar "Mi Medidor" → ingresar el usuario y la
    contraseña del portal mimedidor.mrdims.com.
 
@@ -94,9 +87,9 @@ públicos) no alcanza.
   "mimedidor" en **Configuración → Sistema → Registros**. El cliente
   (`api.py`) informa explícitamente si algún endpoint cambió de forma
   (falta un campo esperado, código HTTP inesperado, etc.).
-- **HACS no encuentra el repositorio o no lo puede descargar**: casi
-  siempre es porque le falta el permiso de repos privados (ver paso 1 de
-  instalación vía HACS).
+- **HACS no encuentra el repositorio o no lo puede descargar**: confirmá
+  que la URL sea exactamente `https://github.com/shakyy95/MiMedidor_HA` y
+  que la categoría elegida al agregarlo haya sido **Integración**.
 
 ## Estructura del proyecto
 
