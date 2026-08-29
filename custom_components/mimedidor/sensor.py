@@ -131,6 +131,15 @@ SENSOR_DESCRIPTIONS: tuple[MiMedidorSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d: _get(d.terminal, "UltimoPeriodico", "DemandaMaxW"),
     ),
+    MiMedidorSensorEntityDescription(
+        key="demanda_maxima_contratada",
+        name="Demanda máxima contratada",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda d: _get(d.suministro, "DemandaMaximaServicio"),
+    ),
     # -- Power quality ----------------------------------------------------
     MiMedidorSensorEntityDescription(
         key="coseno_phi_facturacion",

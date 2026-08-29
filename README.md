@@ -26,7 +26,8 @@ Todas las entidades se agrupan bajo un único dispositivo "Mi Medidor"
 | Consumo mes anterior | `Suministros.ConsumoMesAnterior` | kWh. |
 | Energía de hoy / de ayer | `Consumos?agrupadoPor=2` | kWh por día (el mismo desglose que el gráfico "Energía" del portal); exponen `reactiva_kvarh`/`aparente_kvah`/`coseno_phi` de ese día como atributos. |
 | Demanda actual | `Suministros.DemandaActual` | Potencia (W). |
-| Demanda máxima registrada *(diagnóstico)* | `Terminales.UltimoPeriodico.DemandaMaxW` | Potencia (W). |
+| Demanda máxima registrada *(diagnóstico)* | `Terminales.UltimoPeriodico.DemandaMaxW` | Potencia (W) medida, histórica. |
+| Demanda máxima contratada *(diagnóstico)* | `Suministros.DemandaMaximaServicio` | Potencia (W) contratada con la distribuidora — útil como techo de referencia (p.ej. para un gauge de demanda). |
 | Tensión / Corriente *(por fase)* | `Terminales.UltimoPeriodico` | Un sensor de tensión y uno de corriente por fase: `TensionM`/`CorrienteM` en medidores monofásicos, o `TensionL1..L3`/`CorrienteL1..L3` en trifásicos (se detecta solo con `DatosTerminal.EsTrifasico`). |
 | Coseno φ (facturación) *(diagnóstico)* | `Terminales.UltimoPeriodico.CosPhi` | Agregado del terminal — el "COS φ FACT." del portal. |
 | Factor de potencia / Coseno φ medido / THD tensión / THD corriente *(por fase, diagnóstico)* | `Terminales.UltimoPeriodico` | Iguales a las tarjetas "F.POTENCIA"/"COS φ MED."/"THDv"/"THDi" del portal. Siempre viven en los campos `...L1`/`...L2`/`...L3` — incluso en medidores monofásicos, que igual usan el canal L1 para estas métricas (a diferencia de tensión/corriente, que ahí usan `...M`). |
