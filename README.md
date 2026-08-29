@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="Mi Medidor" width="480">
+  <img src="custom_components/mimedidor/brand/logo@2x.png" alt="Mi Medidor" width="480">
 </p>
 
 <h1 align="center">Mi Medidor (DISCAR / Mr.DiMS) para Home Assistant</h1>
@@ -19,6 +19,13 @@ del período de facturación actual como un sensor de Home Assistant.
 > Proyecto independiente, no afiliado ni respaldado por DISCAR. "Mi Medidor"
 > y su logo son marcas de DISCAR; se referencian acá únicamente para
 > identificar el servicio con el que se integra.
+
+El ícono/logo de `custom_components/mimedidor/brand/` se muestra en HACS y
+en HA a partir de **Home Assistant 2026.3** (soporte nativo de imágenes de
+marca para integraciones custom, sin depender de
+[home-assistant/brands](https://github.com/home-assistant/brands)). En
+versiones anteriores simplemente no se ve ícono; no afecta el
+funcionamiento de la integración.
 
 ## Estado
 
