@@ -3,10 +3,10 @@
   "name": "Mi Medidor (DISCAR / Mr.DiMS)",
   "codeowners": ["@shakyy95"],
   "config_flow": true,
-  "documentation": "https://github.com/shakyy95/mimedidor_ha",
+  "documentation": "https://github.com/shakyy95/MiMedidor_HA",
   "homeassistant": "2024.1.0",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/shakyy95/mimedidor_ha/issues",
+  "issue_tracker": "https://github.com/shakyy95/MiMedidor_HA/issues",
   "requirements": [],
-  "version": "0.5.0"
+  "version": "0.5.1"
 }

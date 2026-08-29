@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="custom_components/mimedidor/brand/logo@2x.png" alt="Mi Medidor" width="480">
+  <img src="https://raw.githubusercontent.com/shakyy95/MiMedidor_HA/main/custom_components/mimedidor/brand/logo@2x.png" alt="Mi Medidor" width="480">
 </p>
 
 <h1 align="center">Mi Medidor (DISCAR / Mr.DiMS) para Home Assistant</h1>
