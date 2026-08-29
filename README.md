@@ -1,71 +1,18 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/shakyy95/MiMedidor_HA/main/custom_components/mimedidor/brand/logo@2x.png" alt="Mi Medidor" width="480">
-</p>
-
-<h1 align="center">Mi Medidor (DISCAR / Mr.DiMS) para Home Assistant</h1>
-
-<p align="center">
-  <a href="https://github.com/hacs/integration"><img alt="HACS Custom" src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg"></a>
-  <a href="https://github.com/shakyy95/MiMedidor_HA/releases"><img alt="Version" src="https://img.shields.io/github/v/release/shakyy95/MiMedidor_HA?sort=semver"></a>
-  <a href="https://github.com/shakyy95/MiMedidor_HA/blob/main/custom_components/mimedidor/manifest.json"><img alt="IoT Class" src="https://img.shields.io/badge/IoT%20Class-Cloud%20Polling-blue.svg"></a>
-</p>
+# Mi Medidor (DISCAR / Mr.DiMS) para Home Assistant
 
 Integración custom para Home Assistant que se conecta al portal de
 autogestión de consumo eléctrico [mimedidor.mrdims.com](https://mimedidor.mrdims.com/)
 (sistema **Mr.DiMS** de **DISCAR**, usado por cooperativas y distribuidoras
-eléctricas argentinas con medidores inteligentes DiMET) y expone el consumo
-del período de facturación actual como un sensor de Home Assistant.
+eléctricas argentinas con medidores inteligentes DiMET).
 
 > Proyecto independiente, no afiliado ni respaldado por DISCAR. "Mi Medidor"
-> y su logo son marcas de DISCAR; se referencian acá únicamente para
-> identificar el servicio con el que se integra.
+> es marca de DISCAR; se referencia acá únicamente para identificar el
+> servicio con el que se integra.
 
-El ícono/logo de `custom_components/mimedidor/brand/` se muestra en HACS y
-en HA a partir de **Home Assistant 2026.3** (soporte nativo de imágenes de
-marca para integraciones custom, sin depender de
-[home-assistant/brands](https://github.com/home-assistant/brands)). En
-versiones anteriores simplemente no se ve ícono; no afecta el
-funcionamiento de la integración.
+## Qué expone
 
-## Estado
-
-✅ Validada end-to-end contra una cuenta real: login, obtención del
-suministro y lectura del consumo del período actual funcionan tal cual está
-implementado. Falta únicamente instalarla y probarla desde la UI de una
-instancia real de Home Assistant.
-
-## Instalación vía HACS
-
-El repositorio es público, así que no hace falta darle a HACS ningún
-permiso especial.
-
-1. **Agregar este repo como repositorio custom.** HACS → ⋮ (arriba a la
-   derecha) → **Repositorios personalizados** → pegar
-   `https://github.com/shakyy95/MiMedidor_HA` → categoría **Integración** →
-   Agregar.
-2. **Instalar.** Buscá "Mi Medidor" dentro de HACS → Integraciones,
-   abrilo y tocá **Descargar**.
-3. **Reiniciar Home Assistant.**
-4. **Configurar la integración.** Configuración → Dispositivos y servicios
-   → Añadir integración → buscar "Mi Medidor" → ingresar el usuario y la
-   contraseña del portal mimedidor.mrdims.com.
-
-<details>
-<summary>Instalación manual (alternativa sin HACS)</summary>
-
-1. Copiar la carpeta `custom_components/mimedidor` de este repo a la
-   carpeta `custom_components` de tu configuración de Home Assistant
-   (creála si no existe).
-2. Reiniciar Home Assistant.
-3. Configuración → Dispositivos y servicios → Añadir integración → "Mi
-   Medidor" → ingresar usuario y contraseña.
-
-</details>
-
-## Entidades
-
-Todas las entidades se agrupan bajo un único dispositivo "Mi Medidor" (marca
-DISCAR, modelo/versión de firmware y número de serie tomados de
+Todas las entidades se agrupan bajo un único dispositivo "Mi Medidor"
+(marca DISCAR, modelo/versión de firmware y número de serie tomados de
 `Terminales`). Se actualizan cada 60 minutos
 (`DEFAULT_SCAN_INTERVAL_MINUTES` en `const.py`).
 
@@ -95,6 +42,30 @@ propósito: el primero se reinicia con cada período (`measurement`), el
 segundo es la lectura de por vida del medidor y solo crece
 (`total_increasing`) — es el que hay que usar para el Panel de Energía.
 
+## Instalación vía HACS
+
+El repositorio es público, así que no hace falta darle a HACS ningún
+permiso especial.
+
+1. HACS → ⋮ (arriba a la derecha) → **Repositorios personalizados** →
+   pegar `https://github.com/shakyy95/MiMedidor_HA` → categoría
+   **Integración** → Agregar.
+2. Buscar "Mi Medidor" dentro de HACS → Integraciones, abrirlo y tocar
+   **Descargar**.
+3. Reiniciar Home Assistant.
+4. Configuración → Dispositivos y servicios → Añadir integración →
+   buscar "Mi Medidor" → ingresar el usuario y la contraseña del portal
+   mimedidor.mrdims.com.
+
+### Instalación manual (alternativa sin HACS)
+
+1. Copiar la carpeta `custom_components/mimedidor` de este repo a la
+   carpeta `custom_components` de tu configuración de Home Assistant
+   (creála si no existe).
+2. Reiniciar Home Assistant.
+3. Configuración → Dispositivos y servicios → Añadir integración → "Mi
+   Medidor" → ingresar usuario y contraseña.
+
 ## Panel de Energía
 
 "Energía total" y "Energía total exportada" ya cumplen lo que pide el
@@ -108,9 +79,9 @@ así que aparecen solas en el selector de sensores:
    a la red* elegir `sensor.mi_medidor_energia_total_exportada` (para un
    suministro unidireccional queda siempre en 0, no hace falta agregarla).
 4. Guardar. HA empieza a generar estadísticas horarias/diarias a partir de
-   ahí — las tarjetas de energía (resumen diario, gráfico de barras,
+   ahí; las tarjetas de energía (resumen diario, gráfico de barras,
    comparativa, etc.) se arman solas una vez que el sensor está cargado en
-   el panel, sin configuración adicional.
+   el panel.
 
 ## Solución de problemas
 
@@ -125,8 +96,7 @@ así que aparecen solas en el selector de sensores:
   que la URL sea exactamente `https://github.com/shakyy95/MiMedidor_HA` y
   que la categoría elegida al agregarlo haya sido **Integración**.
 
-<details>
-<summary>Cómo funciona por dentro</summary>
+## Cómo funciona por dentro
 
 `mimedidor.mrdims.com` es una SPA de Angular sin API pública/documentada: no
 autentica contra un formulario HTML, sino contra una API JSON separada en
@@ -157,13 +127,12 @@ revisar `custom_components/mimedidor/api.py` si eso pasa.
 
 ```
 custom_components/mimedidor/
-├── __init__.py       # setup/unload de la integración
-├── api.py            # cliente HTTP contra api.mrdims.com
-├── config_flow.py     # formulario de usuario/contraseña
-├── const.py           # DOMAIN, plataformas, intervalo de refresco
-├── coordinator.py      # DataUpdateCoordinator (polling + manejo de errores)
-├── sensor.py           # entidad sensor.mi_medidor_consumo
-└── manifest.json       # metadata de la integración para HA/HACS
+├── __init__.py     # setup/unload de la integración
+├── api.py          # cliente HTTP contra api.mrdims.com
+├── config_flow.py  # formulario de usuario/contraseña
+├── const.py        # DOMAIN, plataformas, intervalo de refresco
+├── coordinator.py  # DataUpdateCoordinator (polling + manejo de errores)
+├── sensor.py       # entidades sensor.*
+├── manifest.json   # metadata de la integración para HA/HACS
+└── brand/          # icon.png/logo.png que usan HACS y HA (2026.3+)
 ```
-
-</details>
